@@ -8,7 +8,8 @@ import {
   Settings, 
   Menu,
   TerminalSquare,
-  Activity
+  Activity,
+  ListTodo
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -19,6 +20,7 @@ interface LayoutProps {
 }
 
 const navItems = [
+  { path: '/tasks', label: 'مهامي اليومية', icon: ListTodo, shortLabel: 'Tasks' },
   { path: '/chat', label: 'AI Code Assistant', icon: Bot, shortLabel: 'Chat' },
   { path: '/analyze', label: 'Data Analyzer', icon: BarChart, shortLabel: 'Analyze' },
   { path: '/rewards', label: 'Rewards Researcher', icon: Gift, shortLabel: 'Rewards' },

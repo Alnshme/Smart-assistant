@@ -1,9 +1,16 @@
 import { Link } from 'wouter';
-import { Bot, BarChart, Gift, ArrowRight } from 'lucide-react';
+import { Bot, BarChart, Gift, ListTodo, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 const tools = [
+  {
+    title: 'مهامي اليومية',
+    description: 'تنظيم وتتبع مهامك الشخصية بأولويات وتواريخ استحقاق وفئات.',
+    icon: ListTodo,
+    path: '/tasks',
+    color: 'text-violet-400'
+  },
   {
     title: 'AI Code Assistant',
     description: 'Expert coding help with context-aware explanations and markdown support.',

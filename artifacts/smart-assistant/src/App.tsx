@@ -11,6 +11,7 @@ import Chat from '@/pages/Chat';
 import Analyze from '@/pages/Analyze';
 import Rewards from '@/pages/Rewards';
 import Settings from '@/pages/Settings';
+import Tasks from '@/pages/Tasks';
 import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ function Router() {
         <Route path="/chat" component={Chat} />
         <Route path="/analyze" component={Analyze} />
         <Route path="/rewards" component={Rewards} />
+        <Route path="/tasks" component={Tasks} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>

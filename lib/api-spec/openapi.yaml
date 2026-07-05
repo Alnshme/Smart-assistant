@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Smart Assistant API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: chat
+    description: AI chat operations
+  - name: analyze
+    description: AI data analysis operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,81 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /chat:
+    post:
+      operationId: sendMessage
+      tags: [chat]
+      summary: Send a chat message to the AI assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: AI provider error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /analyze:
+    post:
+      operationId: analyzeData
+      tags: [analyze]
+      summary: Analyze data summary with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeInput"
+      responses:
+        "200":
+          description: AI analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyzeResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: AI provider error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +113,80 @@ components:
       required:
         - status
 
+    ChatMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+      required:
+        - role
+        - content
+
+    ChatInput:
+      type: object
+      properties:
+        apiKey:
+          type: string
+          description: NaraRouter API key
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+          description: Full conversation history including system prompt
+      required:
+        - apiKey
+        - messages
+
+    ChatResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+          description: AI assistant reply
+        tokensUsed:
+          type: integer
+          description: Total tokens consumed
+      required:
+        - reply
+        - tokensUsed
+
+    AnalyzeInput:
+      type: object
+      properties:
+        apiKey:
+          type: string
+          description: NaraRouter API key
+        dataSummary:
+          type: string
+          description: Text summary of the dataset (describe() output)
+        fileName:
+          type: string
+          description: Name of the uploaded file
+      required:
+        - apiKey
+        - dataSummary
+        - fileName
+
+    AnalyzeResponse:
+      type: object
+      properties:
+        analysis:
+          type: string
+          description: AI analysis of the data
+        tokensUsed:
+          type: integer
+          description: Total tokens consumed
+      required:
+        - analysis
+        - tokensUsed
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

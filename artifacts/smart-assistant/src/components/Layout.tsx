@@ -9,7 +9,8 @@ import {
   Menu,
   TerminalSquare,
   Activity,
-  ListTodo
+  ListTodo,
+  Github
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -24,6 +25,7 @@ const navItems = [
   { path: '/chat', label: 'AI Code Assistant', icon: Bot, shortLabel: 'Chat' },
   { path: '/analyze', label: 'Data Analyzer', icon: BarChart, shortLabel: 'Analyze' },
   { path: '/rewards', label: 'Rewards Researcher', icon: Gift, shortLabel: 'Rewards' },
+  { path: '/github', label: 'GitHub Manager', icon: Github, shortLabel: 'GitHub' },
 ];
 
 export function Layout({ children }: LayoutProps) {

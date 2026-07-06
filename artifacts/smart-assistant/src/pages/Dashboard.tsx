@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { Bot, BarChart, Gift, ListTodo, ArrowRight } from 'lucide-react';
+import { Bot, BarChart, Gift, ListTodo, Github, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -31,6 +31,13 @@ const tools = [
     icon: Gift,
     path: '/rewards',
     color: 'text-chart-3'
+  },
+  {
+    title: 'GitHub Manager',
+    description: 'Browse repositories, view and edit files, commit changes, and create new repos — all from the app.',
+    icon: Github,
+    path: '/github',
+    color: 'text-slate-300'
   }
 ];
 

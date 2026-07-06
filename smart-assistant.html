@@ -142,6 +142,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
       Rewards Researcher
     </div>
+    <div class="nav-item" onclick="navigate('github')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+      GitHub Manager
+    </div>
 
     <div style="flex:1"></div>
     <div style="padding:8px 0;margin-top:8px;border-top:1px solid #1e1e2e">
@@ -401,6 +405,138 @@
     </div>
   </div>
 
+  <!-- GITHUB -->
+  <div id="page-github" class="page" style="height:100%;display:flex;flex-direction:column;overflow:hidden">
+
+    <!-- Connect screen -->
+    <div id="gh-connect" style="display:flex;align-items:center;justify-content:center;flex:1;padding:32px">
+      <div style="max-width:420px;width:100%;text-align:center">
+        <div style="width:72px;height:72px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:36px;height:36px"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+        </div>
+        <h2 style="font-size:1.5rem;font-weight:700;margin-bottom:8px">Connect to GitHub</h2>
+        <p style="color:#64748b;font-size:0.875rem;margin-bottom:24px;line-height:1.6">Enter your Personal Access Token to manage repositories, browse and edit files, and commit changes.</p>
+        <div style="text-align:left;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:8px">
+            <input type="password" id="ghTokenInput" class="input-field" placeholder="ghp_..." style="flex:1;font-family:monospace" onkeydown="if(event.key==='Enter')ghConnect()">
+            <button class="btn btn-outline" onclick="ghToggleTokenVis()" style="padding:0 10px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <button class="btn btn-primary" id="ghConnectBtn" onclick="ghConnect()">Connect to GitHub</button>
+          <div id="ghConnectError" style="color:#f87171;font-size:0.8rem;display:none"></div>
+          <p style="color:#4a5568;font-size:0.78rem">Create a token at <a href="https://github.com/settings/tokens/new?scopes=repo" target="_blank" style="color:#8b5cf6">github.com/settings/tokens</a> with <strong>repo</strong> scope.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Repos list -->
+    <div id="gh-repos" style="display:none;height:100%;overflow-y:auto;padding:24px">
+      <div style="max-width:960px;margin:0 auto">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+          <img id="ghAvatar" src="" alt="" style="width:40px;height:40px;border-radius:50%;border:1px solid #1e1e2e;display:none">
+          <div>
+            <div id="ghUserName" style="font-weight:700"></div>
+            <div id="ghUserMeta" style="font-size:0.8rem;color:#64748b"></div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" style="font-size:0.8rem;padding:6px 12px" onclick="ghShowNewRepoForm()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Repo
+            </button>
+            <button class="btn btn-outline" style="font-size:0.8rem;padding:6px 12px" onclick="ghLoadRepos()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              Refresh
+            </button>
+            <button class="btn btn-danger" style="font-size:0.8rem;padding:6px 12px" onclick="ghDisconnect()">Disconnect</button>
+          </div>
+        </div>
+
+        <!-- New repo form -->
+        <div id="ghNewRepoForm" style="display:none;background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:20px;margin-bottom:20px">
+          <h4 style="font-weight:600;margin-bottom:14px;font-size:0.9rem">Create New Repository</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div><div style="font-size:0.75rem;color:#64748b;margin-bottom:4px">Name *</div><input class="input-field" id="ghNewRepoName" placeholder="my-project"></div>
+            <div><div style="font-size:0.75rem;color:#64748b;margin-bottom:4px">Description</div><input class="input-field" id="ghNewRepoDesc" placeholder="Optional"></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem;color:#94a3b8;margin-bottom:12px">
+            <input type="checkbox" id="ghNewRepoPrivate" style="accent-color:#7c3aed"> Private repository
+          </label>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" style="font-size:0.8rem" onclick="ghCreateRepo()">Create Repository</button>
+            <button class="btn btn-outline" style="font-size:0.8rem" onclick="document.getElementById('ghNewRepoForm').style.display='none'">Cancel</button>
+          </div>
+        </div>
+
+        <input class="input-field" id="ghRepoSearch" placeholder="Search repositories..." style="margin-bottom:16px" oninput="ghFilterRepos()">
+        <div id="ghRepoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
+      </div>
+    </div>
+
+    <!-- File browser -->
+    <div id="gh-browser" style="display:none;height:100%;flex-direction:column;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;padding:14px 24px;border-bottom:1px solid #1e1e2e;flex-shrink:0;flex-wrap:wrap">
+        <button class="btn btn-outline" style="font-size:0.8rem;padding:5px 10px;gap:4px" onclick="ghBackToRepos()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="15 18 9 12 15 6"/></svg>
+          Repos
+        </button>
+        <div id="ghBreadcrumb" style="display:flex;align-items:center;gap:4px;font-size:0.85rem;flex-wrap:wrap"></div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-outline" style="font-size:0.8rem;padding:5px 10px;gap:4px" onclick="ghShowNewFileForm()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New File
+          </button>
+        </div>
+      </div>
+
+      <!-- New file form -->
+      <div id="ghNewFileForm" style="display:none;background:#13131d;border-bottom:1px solid #1e1e2e;padding:16px 24px">
+        <h4 style="font-weight:600;margin-bottom:12px;font-size:0.85rem">Create New File</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><div style="font-size:0.75rem;color:#64748b;margin-bottom:4px">File name *</div><input class="input-field" id="ghNewFileName" placeholder="index.ts" style="font-size:0.85rem"></div>
+          <div><div style="font-size:0.75rem;color:#64748b;margin-bottom:4px">Commit message</div><input class="input-field" id="ghNewFileMsg" placeholder="Add new file" style="font-size:0.85rem"></div>
+        </div>
+        <textarea id="ghNewFileContent" class="input-field" rows="4" placeholder="File content..." style="resize:vertical;font-family:monospace;font-size:0.82rem;margin-bottom:10px"></textarea>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="font-size:0.8rem" onclick="ghCreateFile()">Create File</button>
+          <button class="btn btn-outline" style="font-size:0.8rem" onclick="document.getElementById('ghNewFileForm').style.display='none'">Cancel</button>
+        </div>
+      </div>
+
+      <div id="ghFileList" style="flex:1;overflow-y:auto;padding:16px 24px"></div>
+    </div>
+
+    <!-- File viewer -->
+    <div id="gh-viewer" style="display:none;height:100%;flex-direction:column;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;padding:14px 24px;border-bottom:1px solid #1e1e2e;flex-shrink:0;flex-wrap:wrap">
+        <button class="btn btn-outline" style="font-size:0.8rem;padding:5px 10px;gap:4px" onclick="ghCloseFile()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <span id="ghViewerFileName" style="font-family:monospace;font-size:0.875rem;font-weight:500"></span>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <div id="ghEditActions" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+            <input class="input-field" id="ghCommitMsg" placeholder="Commit message..." style="height:32px;font-size:0.8rem;width:220px">
+            <button class="btn btn-primary" style="font-size:0.8rem;padding:5px 12px" onclick="ghSaveFile()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="20 6 9 17 4 12"/></svg>
+              Commit
+            </button>
+            <button class="btn btn-outline" style="font-size:0.8rem;padding:5px 10px" onclick="ghCancelEdit()">✕</button>
+          </div>
+          <button id="ghEditBtn" class="btn btn-outline" style="font-size:0.8rem;padding:5px 10px;gap:4px" onclick="ghEnableEdit()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button class="btn btn-danger" style="font-size:0.8rem;padding:5px 10px;gap:4px" onclick="ghDeleteFile()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            Delete
+          </button>
+        </div>
+      </div>
+      <div id="ghViewerContent" style="flex:1;overflow:auto;padding:20px 24px"></div>
+    </div>
+  </div>
+
   <!-- SETTINGS -->
   <div id="page-settings" class="page" style="padding:24px">
     <div style="max-width:600px;margin:0 auto">
@@ -427,6 +563,30 @@
           <button class="btn btn-danger" onclick="clearApiKey()">Clear Key</button>
         </div>
         <div id="apiKeyStatus" style="margin-top:12px;font-size:0.82rem"></div>
+      </div>
+
+      <div style="background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:24px;margin-bottom:20px">
+        <h3 style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:18px;height:18px"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+          GitHub Configuration
+        </h3>
+        <p style="color:#64748b;font-size:0.82rem;margin-bottom:16px">Personal Access Token for the GitHub Manager. Stored locally — never sent to any server.</p>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input type="password" class="input-field" id="settingsGhToken" placeholder="ghp_..." style="flex:1;font-family:monospace">
+          <button class="btn btn-outline" onclick="toggleSettingsGhVis()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div id="settingsGhStatus" style="font-size:0.78rem;color:#34d399;margin-bottom:12px;display:none">
+          ● Token configured — GitHub Manager is active
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveGhToken()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/></svg>
+            Save Token
+          </button>
+          <button class="btn btn-danger" onclick="clearGhToken()">Clear Token</button>
+        </div>
       </div>
 
       <div style="background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:24px">
@@ -482,9 +642,11 @@ function navigate(page) {
   closeMobileMenu();
   if (page === 'tasks') renderTasks();
   if (page === 'rewards') renderRewards();
+  if (page === 'github') initGitHub();
   if (page === 'settings') {
     document.getElementById('apiKeyInput').value = state.apiKey;
     document.getElementById('settingsTokens').textContent = state.totalTokens.toLocaleString();
+    updateSettingsGhStatus();
   }
 }
 
@@ -541,6 +703,7 @@ const tools = [
   { id: 'chat', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:28px;height:28px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>`, title: 'AI Code Assistant', desc: 'Expert coding help with context-aware explanations and markdown support.', color: '#7c3aed' },
   { id: 'analyze', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" style="width:28px;height:28px"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`, title: 'Data Analyzer', desc: 'Upload CSV/Excel datasets to get instant AI-powered statistical insights.', color: '#06b6d4' },
   { id: 'rewards', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="width:28px;height:28px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`, title: 'Rewards Researcher', desc: 'Quickly categorize links and discover promotional patterns across platforms.', color: '#f59e0b' },
+  { id: 'github', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="width:28px;height:28px"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>`, title: 'GitHub Manager', desc: 'Browse repositories, view and edit files, commit changes, and create new repos.', color: '#94a3b8' },
 ];
 
 function renderDashboard() {
@@ -988,6 +1151,360 @@ function resetTokens() {
 const style = document.createElement('style');
 style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
 document.head.appendChild(style);
+
+// =================== GITHUB ===================
+const GH_API = 'https://api.github.com';
+let gh = {
+  token: localStorage.getItem('github_token') || '',
+  user: null,
+  repos: [],
+  repo: null,
+  pathStack: [],
+  fileSha: '',
+  fileContent: '',
+  editMode: false,
+};
+
+function ghSaveToken(t) { gh.token = t; localStorage.setItem('github_token', t); }
+function ghClearToken() { gh.token = ''; localStorage.removeItem('github_token'); }
+
+async function ghFetch(path, opts = {}) {
+  const res = await fetch(`${GH_API}${path}`, {
+    ...opts,
+    headers: {
+      Authorization: `Bearer ${gh.token}`,
+      Accept: 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+function ghSwitchView(id) {
+  ['gh-connect','gh-repos','gh-browser','gh-viewer'].forEach(v => {
+    const el = document.getElementById(v);
+    if (el) { el.style.display = 'none'; el.style.flexDirection = ''; }
+  });
+  const target = document.getElementById(id);
+  if (target) {
+    target.style.display = ['gh-browser','gh-viewer'].includes(id) ? 'flex' : '';
+    if (id === 'gh-connect') target.style.display = 'flex';
+    if (id === 'gh-repos') target.style.display = 'block';
+  }
+}
+
+function ghToggleTokenVis() {
+  const inp = document.getElementById('ghTokenInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function ghConnect() {
+  const t = document.getElementById('ghTokenInput').value.trim();
+  if (!t) return;
+  const btn = document.getElementById('ghConnectBtn');
+  const err = document.getElementById('ghConnectError');
+  btn.disabled = true; btn.textContent = 'Connecting...'; err.style.display = 'none';
+  try {
+    const res = await fetch(`${GH_API}/user`, {
+      headers: { Authorization: `Bearer ${t}`, Accept: 'application/vnd.github.v3+json' },
+    });
+    if (!res.ok) throw new Error('Invalid token — check scopes and expiry.');
+    const u = await res.json();
+    ghSaveToken(t);
+    gh.user = u;
+    ghRenderUserHeader();
+    await ghLoadRepos();
+    ghSwitchView('gh-repos');
+    // sync to settings field
+    const sf = document.getElementById('settingsGhToken');
+    if (sf) { sf.value = t; updateSettingsGhStatus(); }
+  } catch (e) {
+    err.textContent = e.message; err.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = 'Connect to GitHub';
+}
+
+function ghDisconnect() {
+  ghClearToken();
+  gh.user = null; gh.repos = []; gh.repo = null; gh.pathStack = [];
+  document.getElementById('ghTokenInput').value = '';
+  const sf = document.getElementById('settingsGhToken');
+  if (sf) { sf.value = ''; updateSettingsGhStatus(); }
+  ghSwitchView('gh-connect');
+}
+
+function ghRenderUserHeader() {
+  if (!gh.user) return;
+  const av = document.getElementById('ghAvatar');
+  if (av) { av.src = gh.user.avatar_url; av.style.display = 'block'; }
+  const nm = document.getElementById('ghUserName');
+  if (nm) nm.textContent = gh.user.name || gh.user.login;
+  const mt = document.getElementById('ghUserMeta');
+  if (mt) mt.textContent = `@${gh.user.login} · ${gh.user.public_repos} repositories`;
+}
+
+async function ghLoadRepos() {
+  try {
+    const data = await ghFetch('/user/repos?sort=updated&per_page=100&affiliation=owner,collaborator');
+    gh.repos = data;
+    ghFilterRepos();
+    ghRenderUserHeader();
+  } catch (e) {
+    alert('Failed to load repos: ' + e.message);
+  }
+}
+
+const LANG_COLOR = { TypeScript:'#3178c6', JavaScript:'#f7df1e', Python:'#3572A5', HTML:'#e34c26', CSS:'#563d7c', Rust:'#dea584', Go:'#00ADD8', Java:'#b07219', Ruby:'#701516', PHP:'#4F5D95', Shell:'#89e051' };
+
+function ghFilterRepos() {
+  const q = (document.getElementById('ghRepoSearch')?.value || '').toLowerCase();
+  const filtered = gh.repos.filter(r =>
+    !q || r.name.toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q)
+  );
+  const grid = document.getElementById('ghRepoGrid');
+  if (!grid) return;
+  if (!filtered.length) { grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#4a5568;padding:48px">No repositories found.</div>`; return; }
+  grid.innerHTML = filtered.map(r => `
+    <button onclick="ghBrowseRepo(${r.id})" style="text-align:left;background:#13131d;border:1px solid #1e1e2e;border-radius:10px;padding:14px;cursor:pointer;transition:all .15s;width:100%" onmouseover="this.style.borderColor='rgba(124,58,237,.5)'" onmouseout="this.style.borderColor='#1e1e2e'">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><${r.private ? 'rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/' : 'circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/'}>></svg>
+        <span style="font-weight:600;font-size:0.875rem;color:#e2e8f0">${escapeHtml(r.name)}</span>
+      </div>
+      ${r.description ? `<p style="color:#64748b;font-size:0.78rem;margin-bottom:10px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(r.description)}</p>` : ''}
+      <div style="display:flex;align-items:center;gap:10px;font-size:0.72rem;color:#64748b;flex-wrap:wrap">
+        ${r.language ? `<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:${LANG_COLOR[r.language]||'#64748b'}"></span>${escapeHtml(r.language)}</span>` : ''}
+        <span>⭐ ${r.stargazers_count}</span>
+        <span>⑂ ${r.forks_count}</span>
+        <span style="margin-left:auto">${new Date(r.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
+      </div>
+    </button>`).join('');
+}
+
+function ghShowNewRepoForm() {
+  const f = document.getElementById('ghNewRepoForm');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function ghCreateRepo() {
+  const name = document.getElementById('ghNewRepoName').value.trim();
+  if (!name) return alert('Repository name is required.');
+  try {
+    await ghFetch('/user/repos', {
+      method: 'POST',
+      body: JSON.stringify({ name, description: document.getElementById('ghNewRepoDesc').value, private: document.getElementById('ghNewRepoPrivate').checked, auto_init: true }),
+    });
+    document.getElementById('ghNewRepoForm').style.display = 'none';
+    document.getElementById('ghNewRepoName').value = '';
+    document.getElementById('ghNewRepoDesc').value = '';
+    await ghLoadRepos();
+    alert('Repository created successfully!');
+  } catch (e) { alert('Failed: ' + e.message); }
+}
+
+async function ghBrowseRepo(repoId) {
+  gh.repo = gh.repos.find(r => r.id === repoId);
+  if (!gh.repo) return;
+  gh.pathStack = [];
+  ghSwitchView('gh-browser');
+  ghRenderBreadcrumb();
+  await ghLoadDir('');
+}
+
+function ghBackToRepos() {
+  gh.repo = null; gh.pathStack = [];
+  document.getElementById('ghNewFileForm').style.display = 'none';
+  ghSwitchView('gh-repos');
+}
+
+function ghRenderBreadcrumb() {
+  const bc = document.getElementById('ghBreadcrumb');
+  if (!bc || !gh.repo) return;
+  const parts = [
+    `<button onclick="ghNavToRoot()" style="background:none;border:none;cursor:pointer;color:#8b5cf6;font-weight:600;font-size:0.85rem">${escapeHtml(gh.repo.name)}</button>`,
+    ...gh.pathStack.map((seg, i) => `
+      <svg viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="2" style="width:14px;height:14px"><polyline points="9 18 15 12 9 6"/></svg>
+      <button onclick="ghNavToIndex(${i})" style="background:none;border:none;cursor:pointer;color:${i===gh.pathStack.length-1?'#e2e8f0':'#94a3b8'};font-size:0.85rem${i===gh.pathStack.length-1?';font-weight:500':''}">${escapeHtml(seg)}</button>`)
+  ];
+  bc.innerHTML = parts.join('');
+}
+
+async function ghNavToRoot() { gh.pathStack = []; ghRenderBreadcrumb(); await ghLoadDir(''); }
+async function ghNavToIndex(i) { gh.pathStack = gh.pathStack.slice(0, i + 1); ghRenderBreadcrumb(); await ghLoadDir(gh.pathStack.join('/')); }
+
+async function ghLoadDir(path) {
+  const list = document.getElementById('ghFileList');
+  list.innerHTML = `<div style="text-align:center;color:#4a5568;padding:48px">Loading...</div>`;
+  try {
+    const data = await ghFetch(`/repos/${gh.repo.full_name}/contents/${path}`);
+    const items = Array.isArray(data) ? data.sort((a,b) => a.type!==b.type ? (a.type==='dir'?-1:1) : a.name.localeCompare(b.name)) : [];
+    if (!items.length) { list.innerHTML = `<div style="text-align:center;color:#4a5568;padding:48px">Empty directory</div>`; return; }
+    list.innerHTML = `<div style="border:1px solid #1e1e2e;border-radius:10px;overflow:hidden">
+      ${items.map((item, i) => `
+        <button onclick="${item.type==='dir' ? `ghEnterDir('${escapeHtml(item.name)}','${escapeHtml(item.path)}')` : `ghOpenFile('${escapeHtml(item.path)}','${escapeHtml(item.name)}')`}"
+          style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;background:none;border:none;cursor:pointer;text-align:left;color:#e2e8f0;font-size:0.85rem;${i<items.length-1?'border-bottom:1px solid #1e1e2e':''}transition:background .12s"
+          onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background='none'">
+          ${item.type==='dir'
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:15px;height:15px;flex-shrink:0"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>`
+            : `<svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" style="width:15px;height:15px;flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`}
+          <span style="${item.type==='dir'?'color:#8b5cf6;font-weight:500':'font-family:monospace'}">${escapeHtml(item.name)}</span>
+          ${item.type==='file'?`<span style="margin-left:auto;font-size:0.72rem;color:#4a5568">${item.size<1024?item.size+' B':(item.size/1024).toFixed(1)+' KB'}</span>`:''}
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>`).join('')}
+    </div>`;
+  } catch(e) { list.innerHTML = `<div style="color:#f87171;padding:24px">Error: ${escapeHtml(e.message)}</div>`; }
+}
+
+async function ghEnterDir(name, path) {
+  gh.pathStack.push(name); ghRenderBreadcrumb(); await ghLoadDir(path);
+}
+
+function ghShowNewFileForm() {
+  const f = document.getElementById('ghNewFileForm');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function ghCreateFile() {
+  const name = document.getElementById('ghNewFileName').value.trim();
+  if (!name) return alert('File name is required.');
+  const dir = gh.pathStack.join('/');
+  const filePath = dir ? `${dir}/${name}` : name;
+  const content = document.getElementById('ghNewFileContent').value;
+  const msg = document.getElementById('ghNewFileMsg').value || `Add ${name}`;
+  try {
+    await ghFetch(`/repos/${gh.repo.full_name}/contents/${filePath}`, {
+      method: 'PUT',
+      body: JSON.stringify({ message: msg, content: btoa(unescape(encodeURIComponent(content))), branch: gh.repo.default_branch }),
+    });
+    document.getElementById('ghNewFileForm').style.display = 'none';
+    document.getElementById('ghNewFileName').value = '';
+    document.getElementById('ghNewFileContent').value = '';
+    document.getElementById('ghNewFileMsg').value = '';
+    await ghLoadDir(gh.pathStack.join('/'));
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function ghOpenFile(path, name) {
+  const isBinary = /\.(png|jpe?g|gif|webp|ico|pdf|zip|tar|gz|exe|bin|wasm|mp4|mp3)$/i.test(name);
+  document.getElementById('ghViewerFileName').textContent = name;
+  document.getElementById('ghEditBtn').style.display = isBinary ? 'none' : 'inline-flex';
+  document.getElementById('ghEditActions').style.display = 'none';
+  ghSwitchView('gh-viewer');
+  const content = document.getElementById('ghViewerContent');
+  content.innerHTML = `<div style="text-align:center;color:#4a5568;padding:48px">Loading...</div>`;
+  gh.editMode = false;
+  try {
+    const data = await ghFetch(`/repos/${gh.repo.full_name}/contents/${path}`);
+    gh.fileSha = data.sha;
+    gh.filePath = path;
+    gh.fileName = name;
+    if (isBinary) {
+      content.innerHTML = `<div style="text-align:center;color:#4a5568;padding:64px"><div style="font-size:2rem;margin-bottom:12px">📁</div>Binary file — preview not available.</div>`;
+      return;
+    }
+    gh.fileContent = decodeURIComponent(escape(atob(data.content.replace(/\n/g,''))));
+    document.getElementById('ghCommitMsg').value = `Update ${name}`;
+    renderFileContent(false);
+  } catch(e) { content.innerHTML = `<div style="color:#f87171;padding:24px">Error: ${escapeHtml(e.message)}</div>`; }
+}
+
+function renderFileContent(edit) {
+  const content = document.getElementById('ghViewerContent');
+  if (edit) {
+    content.innerHTML = `<textarea id="ghEditor" style="width:100%;height:100%;min-height:400px;background:#0d0d14;color:#e2e8f0;border:none;outline:none;resize:none;font-family:monospace;font-size:0.82rem;padding:16px;line-height:1.6">${escapeHtml(gh.fileContent)}</textarea>`;
+  } else {
+    content.innerHTML = `<pre style="font-family:monospace;font-size:0.82rem;line-height:1.6;background:#0d0d14;padding:20px;border-radius:8px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin:0">${escapeHtml(gh.fileContent)}</pre>`;
+  }
+}
+
+function ghEnableEdit() {
+  gh.editMode = true;
+  document.getElementById('ghEditBtn').style.display = 'none';
+  document.getElementById('ghEditActions').style.display = 'flex';
+  renderFileContent(true);
+}
+
+function ghCancelEdit() {
+  gh.editMode = false;
+  document.getElementById('ghEditBtn').style.display = 'inline-flex';
+  document.getElementById('ghEditActions').style.display = 'none';
+  renderFileContent(false);
+}
+
+async function ghSaveFile() {
+  const editor = document.getElementById('ghEditor');
+  const newContent = editor ? editor.value : gh.fileContent;
+  const msg = document.getElementById('ghCommitMsg').value || `Update ${gh.fileName}`;
+  try {
+    await ghFetch(`/repos/${gh.repo.full_name}/contents/${gh.filePath}`, {
+      method: 'PUT',
+      body: JSON.stringify({ message: msg, content: btoa(unescape(encodeURIComponent(newContent))), sha: gh.fileSha, branch: gh.repo.default_branch }),
+    });
+    gh.fileContent = newContent; ghCancelEdit();
+    // show brief flash
+    const fn = document.getElementById('ghViewerFileName');
+    const orig = fn.textContent; fn.textContent = '✓ Committed!'; fn.style.color='#34d399';
+    setTimeout(() => { fn.textContent = orig; fn.style.color=''; }, 2000);
+  } catch(e) { alert('Commit failed: ' + e.message); }
+}
+
+async function ghDeleteFile() {
+  if (!confirm(`Delete "${gh.fileName}"? This cannot be undone.`)) return;
+  try {
+    const data = await ghFetch(`/repos/${gh.repo.full_name}/contents/${gh.filePath}`);
+    await ghFetch(`/repos/${gh.repo.full_name}/contents/${gh.filePath}`, {
+      method: 'DELETE', body: JSON.stringify({ message: `Delete ${gh.fileName}`, sha: data.sha }),
+    });
+    ghCloseFile();
+  } catch(e) { alert('Delete failed: ' + e.message); }
+}
+
+function ghCloseFile() { ghSwitchView('gh-browser'); }
+
+// Init GitHub on page load
+function initGitHub() {
+  if (gh.token) {
+    ghFetch('/user').then(u => {
+      gh.user = u;
+      ghLoadRepos().then(() => ghSwitchView('gh-repos'));
+    }).catch(ghDisconnect);
+  } else {
+    ghSwitchView('gh-connect');
+  }
+}
+
+// Settings GitHub token helpers
+function toggleSettingsGhVis() {
+  const inp = document.getElementById('settingsGhToken');
+  if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function saveGhToken() {
+  const val = document.getElementById('settingsGhToken')?.value.trim();
+  if (!val) return;
+  ghSaveToken(val);
+  document.getElementById('ghTokenInput').value = val;
+  updateSettingsGhStatus();
+  alert('GitHub token saved! Go to GitHub Manager to connect.');
+}
+
+function clearGhToken() {
+  ghDisconnect();
+  const sf = document.getElementById('settingsGhToken');
+  if (sf) sf.value = '';
+  updateSettingsGhStatus();
+}
+
+function updateSettingsGhStatus() {
+  const el = document.getElementById('settingsGhStatus');
+  if (el) el.style.display = gh.token ? 'block' : 'none';
+  const sf = document.getElementById('settingsGhToken');
+  if (sf && !sf.value && gh.token) sf.value = gh.token;
+}
 </script>
 </body>
 </html>

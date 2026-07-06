@@ -4,13 +4,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Save, Trash2, Key, Activity } from 'lucide-react';
+import { Eye, EyeOff, Save, Trash2, Key, Activity, Github } from 'lucide-react';
+import { useLocalStorage } from 'usehooks-ts';
+import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Settings() {
   const { apiKey, setApiKey, totalTokens, resetTokens } = useAppContext();
   const [inputValue, setInputValue] = useState(apiKey);
   const [showKey, setShowKey] = useState(false);
+  const [githubToken, setGithubToken] = useLocalStorage('github_token', '');
+  const [ghInput, setGhInput] = useState(githubToken);
+  const [showGhKey, setShowGhKey] = useState(false);
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   const handleSave = () => {
@@ -33,10 +39,17 @@ export default function Settings() {
 
   const handleResetTokens = () => {
     resetTokens();
-    toast({
-      title: 'Tokens Reset',
-      description: 'Your token usage count has been reset to zero.',
-    });
+    toast({ title: 'Tokens Reset', description: 'Your token usage count has been reset to zero.' });
+  };
+
+  const handleSaveGithub = () => {
+    setGithubToken(ghInput.trim());
+    toast({ title: 'GitHub Token Saved', description: 'Your GitHub token has been stored locally.' });
+  };
+
+  const handleClearGithub = () => {
+    setGhInput(''); setGithubToken('');
+    toast({ title: 'GitHub Token Cleared', variant: 'destructive' });
   };
 
   return (
@@ -94,6 +107,61 @@ export default function Settings() {
               <Button onClick={handleSave} disabled={inputValue === apiKey} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Save className="w-4 h-4 mr-2" />
                 Save Settings
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card className="border-border shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Github className="w-5 h-5 text-primary" />
+                GitHub Configuration
+              </CardTitle>
+              <CardDescription>
+                Personal Access Token for the GitHub Manager. Stored locally — never sent to any server.{' '}
+                {githubToken && (
+                  <button onClick={() => navigate('/github')} className="text-primary hover:underline font-medium">
+                    Open GitHub Manager →
+                  </button>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="gh-key">Personal Access Token</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="gh-key"
+                      type={showGhKey ? 'text' : 'password'}
+                      value={ghInput}
+                      onChange={e => setGhInput(e.target.value)}
+                      placeholder="ghp_..."
+                      className="pr-10 bg-background font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowGhKey(!showGhKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showGhKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                {githubToken && (
+                  <p className="text-xs text-emerald-500 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                    Token configured — GitHub Manager is active
+                  </p>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between border-t border-border pt-6">
+              <Button variant="outline" onClick={handleClearGithub} disabled={!ghInput && !githubToken} className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20">
+                <Trash2 className="w-4 h-4 mr-2" /> Clear Token
+              </Button>
+              <Button onClick={handleSaveGithub} disabled={ghInput === githubToken} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Save className="w-4 h-4 mr-2" /> Save Token
               </Button>
             </CardFooter>
           </Card>

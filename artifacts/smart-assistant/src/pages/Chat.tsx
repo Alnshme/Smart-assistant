@@ -88,6 +88,8 @@ export default function Chat() {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedIdx(idx);
       setTimeout(() => setCopiedIdx(null), 2000);
+    }).catch(() => {
+      toast({ title: 'Copy failed', description: 'Could not access clipboard.', variant: 'destructive' });
     });
   };
 

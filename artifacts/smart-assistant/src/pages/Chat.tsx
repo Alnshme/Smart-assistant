@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Bot, User, Trash2, Loader2, AlertCircle, Cpu } from 'lucide-react';
+import { Send, Bot, User, Trash2, Loader2, AlertCircle, Cpu, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
@@ -83,6 +83,14 @@ export default function Chat() {
     setMessages([SYSTEM_PROMPT]);
   };
 
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const copyMessage = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    });
+  };
+
   return (
     <div className="h-full flex flex-col p-4 md:p-6" dir="auto">
       <div className="flex items-center justify-between mb-4" dir="ltr">
@@ -137,12 +145,24 @@ export default function Chat() {
                         <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                       )}
                     </div>
-                    {msg.role === 'assistant' && msg.tokens && (
-                      <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1 ml-1" dir="ltr">
-                        <Cpu className="w-3 h-3" />
-                        {msg.tokens} tokens used
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 mt-1 ml-1">
+                      {msg.role === 'assistant' && msg.tokens && (
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1" dir="ltr">
+                          <Cpu className="w-3 h-3" />
+                          {msg.tokens} tokens
+                        </div>
+                      )}
+                      <button
+                        onClick={() => copyMessage(msg.content, idx)}
+                        className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                        title="Copy message"
+                      >
+                        {copiedIdx === idx
+                          ? <><Check className="w-3 h-3 text-emerald-500" /><span className="text-emerald-500">Copied!</span></>
+                          : <><Copy className="w-3 h-3" /><span>Copy</span></>
+                        }
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))

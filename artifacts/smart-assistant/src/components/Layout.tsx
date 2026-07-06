@@ -103,13 +103,13 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="flex h-screen overflow-hidden bg-background" dir="ltr">
       {/* Sidebar for Desktop */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border bg-card">
+      <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card">
         <NavLinks className="flex-1 py-6 px-4 flex flex-col h-full" />
       </aside>
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         {/* Mobile Header */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card">
           <Link href="/">
             <div className="flex items-center space-x-2 space-x-reverse cursor-pointer">
               <TerminalSquare className="w-6 h-6 text-primary" />

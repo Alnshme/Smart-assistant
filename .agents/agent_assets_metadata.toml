@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "s5M4sH74S2hCJ01-37qSw"
+uri = "file://smart-assistant.html"
+type = "unspecified"
+title = "Smart Assistant — Standalone HTML"

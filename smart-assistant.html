@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#7c3aed',
+            'primary-light': '#8b5cf6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { background: #0f0f13; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1a1a24; }
+    ::-webkit-scrollbar-thumb { background: #3f3f5a; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
+
+    .sidebar { width: 240px; min-width: 240px; background: #13131d; border-right: 1px solid #1e1e2e; display: flex; flex-direction: column; height: 100vh; }
+    .main-content { flex: 1; overflow-y: auto; height: 100vh; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.875rem; font-weight: 500; color: #94a3b8; transition: all 0.15s; margin: 2px 8px; }
+    .nav-item:hover { background: #1e1e2e; color: #e2e8f0; }
+    .nav-item.active { background: rgba(124,58,237,0.15); color: #8b5cf6; }
+    .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    .tool-card { background: #13131d; border: 1px solid #1e1e2e; border-radius: 12px; padding: 24px; transition: all 0.2s; cursor: pointer; }
+    .tool-card:hover { border-color: #7c3aed; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.15); }
+
+    .chat-bubble { max-width: 80%; padding: 12px 16px; border-radius: 12px; line-height: 1.6; font-size: 0.9rem; }
+    .chat-bubble.user { background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.3); margin-left: auto; border-radius: 12px 12px 4px 12px; }
+    .chat-bubble.assistant { background: #1a1a26; border: 1px solid #2a2a3e; border-radius: 12px 12px 12px 4px; }
+    .chat-bubble pre { background: #0d0d14; border-radius: 6px; padding: 10px; overflow-x: auto; margin: 8px 0; }
+    .chat-bubble code { font-size: 0.82rem; }
+    .chat-bubble p { margin: 0 0 6px; }
+    .chat-bubble p:last-child { margin: 0; }
+    .chat-bubble ul, .chat-bubble ol { padding-left: 20px; margin: 6px 0; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-primary { background: #7c3aed; color: #fff; }
+    .btn-primary:hover { background: #6d28d9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline { background: transparent; color: #94a3b8; border: 1px solid #2a2a3e; }
+    .btn-outline:hover { background: #1e1e2e; color: #e2e8f0; }
+    .btn-danger { background: transparent; color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+    .btn-danger:hover { background: rgba(248,113,113,0.1); }
+
+    .input-field { background: #1a1a26; border: 1px solid #2a2a3e; color: #e2e8f0; padding: 10px 14px; border-radius: 8px; font-size: 0.875rem; width: 100%; outline: none; transition: border-color 0.15s; }
+    .input-field:focus { border-color: #7c3aed; }
+    .input-field::placeholder { color: #4a5568; }
+
+    .select-field { background: #1a1a26; border: 1px solid #2a2a3e; color: #e2e8f0; padding: 8px 12px; border-radius: 8px; font-size: 0.875rem; outline: none; cursor: pointer; }
+    .select-field:focus { border-color: #7c3aed; }
+
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+    .badge-high { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+    .badge-medium { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .badge-low { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+
+    .task-item { background: #13131d; border: 1px solid #1e1e2e; border-radius: 10px; padding: 14px 16px; transition: all 0.15s; }
+    .task-item:hover { border-color: #2a2a3e; }
+    .task-item.completed { opacity: 0.55; }
+    .task-item.overdue { border-color: rgba(248,113,113,0.3); }
+
+    .drop-zone { border: 2px dashed #2a2a3e; border-radius: 12px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: #7c3aed; background: rgba(124,58,237,0.05); }
+
+    .stat-card { background: #13131d; border: 1px solid #1e1e2e; border-radius: 10px; padding: 16px; text-align: center; }
+
+    .reward-card { background: #13131d; border: 1px solid #1e1e2e; border-radius: 10px; padding: 16px; transition: border-color 0.15s; }
+    .reward-card:hover { border-color: #7c3aed; }
+
+    .api-banner { background: rgba(248,113,113,0.1); border-bottom: 1px solid rgba(248,113,113,0.2); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .typing-dots span { animation: blink 1.2s infinite; }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+
+    .progress-bar { height: 6px; background: #1e1e2e; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #8b5cf6); border-radius: 3px; transition: width 0.4s ease; }
+
+    .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; background: rgba(124,58,237,0.15); color: #8b5cf6; border: 1px solid rgba(124,58,237,0.25); }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; position: fixed; z-index: 50; transform: translateX(-100%); transition: transform 0.25s; }
+      .sidebar.open { display: flex; transform: translateX(0); }
+      .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 40; }
+      .mobile-overlay.open { display: block; }
+      .mobile-menu-btn { display: flex !important; }
+    }
+    .mobile-menu-btn { display: none; }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- Mobile overlay -->
+<div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="p-4 border-b border-gray-800 flex items-center gap-2">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:28px;height:28px"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 7h2M7 11h10"/></svg>
+    <span style="font-size:1.05rem;font-weight:700;color:#e2e8f0">Smart Assistant</span>
+  </div>
+
+  <div style="padding:8px 0;flex:1;overflow-y:auto">
+    <div style="padding:12px 16px 4px;font-size:0.7rem;color:#4a5568;font-weight:600;text-transform:uppercase;letter-spacing:.08em">Tools</div>
+    <div class="nav-item" onclick="navigate('tasks')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      مهامي اليومية
+    </div>
+    <div class="nav-item" onclick="navigate('chat')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
+      AI Code Assistant
+    </div>
+    <div class="nav-item" onclick="navigate('analyze')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      Data Analyzer
+    </div>
+    <div class="nav-item" onclick="navigate('rewards')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Rewards Researcher
+    </div>
+
+    <div style="flex:1"></div>
+    <div style="padding:8px 0;margin-top:8px;border-top:1px solid #1e1e2e">
+      <div style="padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:0.8rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:16px;height:16px"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <div>
+          <div style="color:#64748b;font-size:0.7rem">Tokens Used</div>
+          <div style="font-family:monospace;color:#e2e8f0;font-weight:600" id="sidebarTokens">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:8px;border-top:1px solid #1e1e2e">
+    <div class="nav-item" id="settingsNavItem" onclick="navigate('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      Settings
+      <span id="settingsBadge" class="pulse" style="width:8px;height:8px;border-radius:50%;background:#f87171;margin-left:auto;display:none"></span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main-content flex flex-col">
+  <!-- Mobile header -->
+  <header style="display:none;align-items:center;justify-content:space-between;padding:12px 16px;background:#13131d;border-bottom:1px solid #1e1e2e" id="mobileHeader">
+    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="navigate('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:22px;height:22px"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
+      <span style="font-weight:700">Smart Assistant</span>
+    </div>
+    <button class="mobile-menu-btn btn btn-outline" onclick="openMobileMenu()" style="padding:6px 10px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </header>
+
+  <!-- API Key banner -->
+  <div id="apiBanner" class="api-banner" style="display:none">
+    <span style="color:#f87171;display:flex;align-items:center;gap:8px">
+      <span class="pulse" style="width:8px;height:8px;border-radius:50%;background:#f87171;display:inline-block"></span>
+      API Key is missing. Please configure it to use AI tools.
+    </span>
+    <button class="btn btn-outline" style="height:32px;font-size:0.8rem;border-color:rgba(248,113,113,0.3);color:#f87171" onclick="navigate('settings')">Go to Settings</button>
+  </div>
+
+  <!-- Pages -->
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active" style="padding:32px">
+    <div style="max-width:900px;margin:0 auto">
+      <h1 style="font-size:2rem;font-weight:700;margin-bottom:8px">Welcome to Smart Assistant</h1>
+      <p style="color:#64748b;margin-bottom:32px;font-size:0.95rem">A precise, command-center inspired toolkit for AI help, data analysis, research, and task management.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px" id="toolCards"></div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="page-chat" class="page" style="display:flex;flex-direction:column;height:100%;max-height:100vh">
+    <div style="padding:20px 24px;border-bottom:1px solid #1e1e2e;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div>
+        <h2 style="font-size:1.1rem;font-weight:700;margin:0">AI Code Assistant</h2>
+        <p style="color:#64748b;font-size:0.8rem;margin:2px 0 0">Powered by Mistral Large via NaraRouter</p>
+      </div>
+      <button class="btn btn-outline" onclick="clearChat()" style="font-size:0.8rem;padding:6px 12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        Clear
+      </button>
+    </div>
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+      <div style="text-align:center;color:#4a5568;font-size:0.85rem;padding:40px 0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="1.5" style="width:40px;height:40px;margin:0 auto 12px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
+        Start a conversation with the AI assistant
+      </div>
+    </div>
+    <div style="padding:16px 24px;border-top:1px solid #1e1e2e;flex-shrink:0">
+      <div style="display:flex;gap:10px;max-width:900px;margin:0 auto">
+        <textarea id="chatInput" class="input-field" placeholder="Ask anything about code..." rows="1"
+          style="resize:none;flex:1;padding:12px 14px;line-height:1.5"
+          onkeydown="handleChatKey(event)"
+          oninput="autoResize(this)"></textarea>
+        <button class="btn btn-primary" id="chatSendBtn" onclick="sendChat()" style="align-self:flex-end;height:44px;padding:0 18px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYZE -->
+  <div id="page-analyze" class="page" style="padding:24px">
+    <div style="max-width:1000px;margin:0 auto">
+      <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:4px">Data Analyzer</h2>
+      <p style="color:#64748b;font-size:0.85rem;margin-bottom:24px">Upload a CSV or Excel file to get instant statistics and AI-powered insights.</p>
+
+      <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="1.5" style="width:40px;height:40px;margin:0 auto 12px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p style="color:#94a3b8;font-weight:500;margin-bottom:4px">Drop your file here, or click to browse</p>
+        <p style="color:#4a5568;font-size:0.8rem">Supports CSV and Excel (.xlsx, .xls)</p>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFileSelect(event)">
+      </div>
+
+      <div id="analyzeResults" style="display:none;margin-top:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 id="fileName" style="font-weight:600;color:#8b5cf6"></h3>
+          <button class="btn btn-outline" onclick="resetAnalyze()" style="font-size:0.8rem;padding:6px 12px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+            New File
+          </button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px" id="analyzeStats"></div>
+
+        <div style="background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:20px;margin-bottom:20px">
+          <h4 style="font-weight:600;margin-bottom:16px;font-size:0.9rem;color:#94a3b8">Column Distribution</h4>
+          <canvas id="analyzeChart" style="max-height:300px"></canvas>
+        </div>
+
+        <div style="background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:20px;margin-bottom:20px">
+          <h4 style="font-weight:600;margin-bottom:12px;font-size:0.9rem;color:#94a3b8">Data Preview (first 10 rows)</h4>
+          <div style="overflow-x:auto">
+            <table id="dataPreview" style="width:100%;font-size:0.8rem;border-collapse:collapse"></table>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:16px">
+          <textarea id="analyzeQuestion" class="input-field" rows="2" placeholder="Ask a question about this dataset..." style="flex:1;resize:none"></textarea>
+          <button class="btn btn-primary" id="analyzeSendBtn" onclick="analyzeWithAI()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Analyze
+          </button>
+        </div>
+        <div id="analyzeAIResult" style="display:none;background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:20px;font-size:0.9rem;line-height:1.7"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REWARDS -->
+  <div id="page-rewards" class="page" style="padding:24px">
+    <div style="max-width:900px;margin:0 auto">
+      <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:4px">Rewards Researcher</h2>
+      <p style="color:#64748b;font-size:0.85rem;margin-bottom:24px">Explore curated reward platforms, cashback programs, and promotional tools.</p>
+
+      <div style="display:flex;gap:10px;margin-bottom:24px">
+        <input class="input-field" id="rewardsSearch" placeholder="Search platforms or categories..." style="flex:1" oninput="filterRewards()">
+        <select class="select-field" id="rewardsCat" onchange="filterRewards()">
+          <option value="">All Categories</option>
+          <option value="cashback">Cashback</option>
+          <option value="crypto">Crypto</option>
+          <option value="shopping">Shopping</option>
+          <option value="surveys">Surveys</option>
+          <option value="referral">Referral</option>
+          <option value="tools">Tools</option>
+        </select>
+      </div>
+
+      <div id="rewardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px"></div>
+
+      <div style="background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:20px;margin-top:28px">
+        <h3 style="font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" style="width:18px;height:18px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Golden Tips
+        </h3>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px" id="goldenTips"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div id="page-tasks" class="page" style="padding:24px" dir="rtl">
+    <div style="max-width:900px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:2px">مهامي اليومية</h2>
+          <p style="color:#64748b;font-size:0.85rem">تنظيم وتتبع مهامك الشخصية بسهولة</p>
+        </div>
+        <div style="display:flex;gap:16px;text-align:center">
+          <div class="stat-card" style="min-width:70px">
+            <div id="totalTasksCount" style="font-size:1.4rem;font-weight:700;color:#8b5cf6">0</div>
+            <div style="font-size:0.7rem;color:#64748b">الإجمالي</div>
+          </div>
+          <div class="stat-card" style="min-width:70px">
+            <div id="doneTasksCount" style="font-size:1.4rem;font-weight:700;color:#34d399">0</div>
+            <div style="font-size:0.7rem;color:#64748b">مكتملة</div>
+          </div>
+          <div class="stat-card" style="min-width:70px">
+            <div id="pendingTasksCount" style="font-size:1.4rem;font-weight:700;color:#fbbf24">0</div>
+            <div style="font-size:0.7rem;color:#64748b">قيد التنفيذ</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div class="progress-bar">
+          <div class="progress-fill" id="tasksProgress" style="width:0%"></div>
+        </div>
+        <div style="font-size:0.75rem;color:#64748b;margin-top:4px;text-align:left" id="progressLabel">0% مكتمل</div>
+      </div>
+
+      <!-- Add task form -->
+      <div style="background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:16px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#8b5cf6;font-size:0.85rem;font-weight:600">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          إضافة مهمة جديدة
+        </div>
+        <input class="input-field" id="taskTitle" placeholder="اكتب اسم المهمة..." style="margin-bottom:10px" onkeydown="if(event.key==='Enter')addTask()">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="date" class="input-field" id="taskDue" style="flex:1;min-width:140px">
+          <select class="select-field" id="taskCategory" style="flex:1;min-width:120px">
+            <option value="عام">عام</option>
+            <option value="عمل">عمل</option>
+            <option value="شخصي">شخصي</option>
+            <option value="برمجة">برمجة</option>
+            <option value="تعلم">تعلم</option>
+          </select>
+          <select class="select-field" id="taskPriority" style="flex:1;min-width:140px">
+            <option value="medium">🟡 أولوية متوسطة</option>
+            <option value="high">🔴 أولوية عالية</option>
+            <option value="low">🟢 أولوية منخفضة</option>
+          </select>
+          <button class="btn btn-primary" onclick="addTask()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            إضافة
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap" dir="rtl">
+        <span style="color:#64748b;font-size:0.85rem;display:flex;align-items:center;gap:4px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          تصفية:
+        </span>
+        <select class="select-field" id="filterPriority" onchange="renderTasks()">
+          <option value="">كل الأولويات</option>
+          <option value="high">عالية</option>
+          <option value="medium">متوسطة</option>
+          <option value="low">منخفضة</option>
+        </select>
+        <select class="select-field" id="filterCategory" onchange="renderTasks()">
+          <option value="">كل الفئات</option>
+          <option value="عام">عام</option>
+          <option value="عمل">عمل</option>
+          <option value="شخصي">شخصي</option>
+          <option value="برمجة">برمجة</option>
+          <option value="تعلم">تعلم</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem;color:#94a3b8;margin-right:auto">
+          <input type="checkbox" id="hideCompleted" onchange="renderTasks()" style="accent-color:#7c3aed">
+          إخفاء المكتملة
+        </label>
+        <button class="btn btn-danger" onclick="clearCompletedTasks()" style="font-size:0.8rem;padding:6px 10px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+          حذف المكتملة
+        </button>
+      </div>
+
+      <div id="tasksList" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="page-settings" class="page" style="padding:24px">
+    <div style="max-width:600px;margin:0 auto">
+      <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:4px">Settings</h2>
+      <p style="color:#64748b;font-size:0.85rem;margin-bottom:28px">Configure your API key and preferences.</p>
+
+      <div style="background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:24px;margin-bottom:20px">
+        <h3 style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:18px;height:18px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          NaraRouter API Key
+        </h3>
+        <p style="color:#64748b;font-size:0.82rem;margin-bottom:16px">Get your key from <a href="https://router.bynara.id" target="_blank" style="color:#8b5cf6">router.bynara.id</a>. Stored locally in your browser only.</p>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input type="password" class="input-field" id="apiKeyInput" placeholder="sk-..." style="flex:1">
+          <button class="btn btn-outline" onclick="toggleApiKeyVisibility()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px" id="eyeIcon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveApiKey()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Key
+          </button>
+          <button class="btn btn-danger" onclick="clearApiKey()">Clear Key</button>
+        </div>
+        <div id="apiKeyStatus" style="margin-top:12px;font-size:0.82rem"></div>
+      </div>
+
+      <div style="background:#13131d;border:1px solid #1e1e2e;border-radius:12px;padding:24px">
+        <h3 style="font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:18px;height:18px"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Token Usage
+        </h3>
+        <p style="color:#64748b;font-size:0.82rem;margin-bottom:16px">Total tokens used across all AI interactions.</p>
+        <div style="font-size:2rem;font-weight:700;font-family:monospace;color:#8b5cf6;margin-bottom:16px" id="settingsTokens">0</div>
+        <button class="btn btn-danger" onclick="resetTokens()">Reset Counter</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main-content -->
+
+<script>
+// =================== UTILS ===================
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function safeMarkdown(content) {
+  return DOMPurify.sanitize(marked.parse(content), { USE_PROFILES: { html: true } });
+}
+
+// =================== STATE ===================
+let state = {
+  currentPage: 'dashboard',
+  apiKey: localStorage.getItem('nara_api_key') || '',
+  totalTokens: parseInt(localStorage.getItem('total_tokens') || '0'),
+  tasks: JSON.parse(localStorage.getItem('daily_tasks') || '[]'),
+  chatHistory: [],
+  analyzeData: null,
+  analyzeChart: null,
+};
+
+// =================== NAVIGATION ===================
+function navigate(page) {
+  state.currentPage = page;
+  document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+  const target = document.getElementById('page-' + page);
+  if (target) { target.style.display = 'block'; target.classList.add('active'); }
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const activeNav = document.querySelector(`.nav-item[onclick="navigate('${page}')"]`);
+  if (activeNav) activeNav.classList.add('active');
+  updateBanner();
+  closeMobileMenu();
+  if (page === 'tasks') renderTasks();
+  if (page === 'rewards') renderRewards();
+  if (page === 'settings') {
+    document.getElementById('apiKeyInput').value = state.apiKey;
+    document.getElementById('settingsTokens').textContent = state.totalTokens.toLocaleString();
+  }
+}
+
+function openMobileMenu() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('mobileOverlay').classList.add('open');
+}
+function closeMobileMenu() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('mobileOverlay').classList.remove('open');
+}
+
+// =================== INIT ===================
+window.addEventListener('DOMContentLoaded', () => {
+  renderDashboard();
+  updateTokenDisplay();
+  updateBanner();
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+  navigate('dashboard');
+});
+
+function checkMobile() {
+  const isMobile = window.innerWidth < 768;
+  document.getElementById('mobileHeader').style.display = isMobile ? 'flex' : 'none';
+}
+
+function updateBanner() {
+  const banner = document.getElementById('apiBanner');
+  const badge = document.getElementById('settingsBadge');
+  if (!state.apiKey && state.currentPage !== 'settings') {
+    banner.style.display = 'flex';
+    badge.style.display = 'inline-block';
+  } else {
+    banner.style.display = 'none';
+    badge.style.display = state.apiKey ? 'none' : 'inline-block';
+  }
+}
+
+function updateTokenDisplay() {
+  document.getElementById('sidebarTokens').textContent = state.totalTokens.toLocaleString();
+  document.getElementById('settingsTokens').textContent = state.totalTokens.toLocaleString();
+}
+
+function addTokens(n) {
+  state.totalTokens += n;
+  localStorage.setItem('total_tokens', state.totalTokens);
+  updateTokenDisplay();
+}
+
+// =================== DASHBOARD ===================
+const tools = [
+  { id: 'tasks', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" style="width:28px;height:28px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>`, title: 'مهامي اليومية', desc: 'تنظيم وتتبع مهامك الشخصية بأولويات وتواريخ استحقاق وفئات.', color: '#a78bfa' },
+  { id: 'chat', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" style="width:28px;height:28px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>`, title: 'AI Code Assistant', desc: 'Expert coding help with context-aware explanations and markdown support.', color: '#7c3aed' },
+  { id: 'analyze', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2" style="width:28px;height:28px"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`, title: 'Data Analyzer', desc: 'Upload CSV/Excel datasets to get instant AI-powered statistical insights.', color: '#06b6d4' },
+  { id: 'rewards', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="width:28px;height:28px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`, title: 'Rewards Researcher', desc: 'Quickly categorize links and discover promotional patterns across platforms.', color: '#f59e0b' },
+];
+
+function renderDashboard() {
+  const grid = document.getElementById('toolCards');
+  grid.innerHTML = tools.map(t => `
+    <div class="tool-card" onclick="navigate('${t.id}')">
+      <div style="background:${t.color}1a;width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;border:1px solid ${t.color}33">${t.icon}</div>
+      <h3 style="font-weight:600;margin-bottom:8px">${t.title}</h3>
+      <p style="color:#64748b;font-size:0.85rem;line-height:1.5;margin-bottom:16px">${t.desc}</p>
+      <div style="display:flex;align-items:center;gap:6px;color:${t.color};font-size:0.85rem;font-weight:500">
+        Launch Tool
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+    </div>
+  `).join('');
+}
+
+// =================== CHAT ===================
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  if (!state.apiKey) { alert('Please set your API key in Settings first.'); navigate('settings'); return; }
+
+  input.value = '';
+  autoResize(input);
+
+  state.chatHistory.push({ role: 'user', content: msg });
+  appendChatMessage('user', msg);
+
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+  const typingEl = appendTyping();
+
+  try {
+    const res = await fetch('https://router.bynara.id/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.apiKey}` },
+      body: JSON.stringify({
+        model: 'mistral-large',
+        messages: [
+          { role: 'system', content: 'You are an expert coding assistant. Provide clear, concise answers with code examples when helpful. Use markdown formatting.' },
+          ...state.chatHistory
+        ]
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const reply = data.choices[0].message.content;
+    const tokens = data.usage?.total_tokens || 0;
+    state.chatHistory.push({ role: 'assistant', content: reply });
+    typingEl.remove();
+    appendChatMessage('assistant', reply);
+    addTokens(tokens);
+  } catch (e) {
+    typingEl.remove();
+    appendChatMessage('assistant', `⚠️ Error: ${e.message}. Please check your API key and try again.`);
+  }
+  btn.disabled = false;
+}
+
+function appendChatMessage(role, content) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.style.display = 'flex';
+  div.style.justifyContent = role === 'user' ? 'flex-end' : 'flex-start';
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble ${role}`;
+  if (role === 'assistant') {
+    bubble.innerHTML = safeMarkdown(content);
+  } else {
+    bubble.textContent = content;
+  }
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.style.display = 'flex';
+  div.style.justifyContent = 'flex-start';
+  div.innerHTML = `<div class="chat-bubble assistant typing-dots" style="padding:14px 18px;color:#64748b">
+    <span>●</span><span>●</span><span>●</span>
+  </div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function clearChat() {
+  state.chatHistory = [];
+  document.getElementById('chatMessages').innerHTML = `
+    <div style="text-align:center;color:#4a5568;font-size:0.85rem;padding:40px 0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="1.5" style="width:40px;height:40px;margin:0 auto 12px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Chat cleared. Start a new conversation.
+    </div>`;
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+// =================== ANALYZE ===================
+let parsedData = [];
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('drag-over'); }
+function handleDragLeave() { document.getElementById('dropZone').classList.remove('drag-over'); }
+function handleDrop(e) { e.preventDefault(); handleDragLeave(); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); }
+function handleFileSelect(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    Papa.parse(file, { header: true, skipEmptyLines: true, complete: r => showAnalyzeResults(file.name, r.data) });
+  } else if (['xlsx','xls'].includes(ext)) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws);
+      showAnalyzeResults(file.name, data);
+    };
+    reader.readAsBinaryString(file);
+  } else {
+    alert('Please upload a CSV or Excel file.');
+  }
+}
+
+function showAnalyzeResults(name, data) {
+  parsedData = data;
+  document.getElementById('dropZone').style.display = 'none';
+  document.getElementById('analyzeResults').style.display = 'block';
+  document.getElementById('fileName').textContent = `📄 ${name} — ${data.length} rows`;
+
+  const cols = Object.keys(data[0] || {});
+  const numericCols = cols.filter(c => data.every(r => !isNaN(parseFloat(r[c])) && r[c] !== ''));
+
+  // Stats
+  const statsEl = document.getElementById('analyzeStats');
+  const stats = [
+    { label: 'Rows', value: data.length },
+    { label: 'Columns', value: cols.length },
+    { label: 'Numeric Cols', value: numericCols.length },
+    { label: 'Text Cols', value: cols.length - numericCols.length },
+  ];
+  statsEl.innerHTML = stats.map(s => `
+    <div class="stat-card">
+      <div style="font-size:1.5rem;font-weight:700;color:#8b5cf6">${s.value}</div>
+      <div style="font-size:0.75rem;color:#64748b">${s.label}</div>
+    </div>`).join('');
+
+  // Chart
+  if (state.analyzeChart) { state.analyzeChart.destroy(); }
+  const chartCols = numericCols.slice(0, 8);
+  const ctx = document.getElementById('analyzeChart').getContext('2d');
+  state.analyzeChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: chartCols,
+      datasets: [{
+        label: 'Column Averages',
+        data: chartCols.map(c => {
+          const vals = data.map(r => parseFloat(r[c])).filter(v => !isNaN(v));
+          return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+        }),
+        backgroundColor: 'rgba(124,58,237,0.6)',
+        borderColor: '#7c3aed',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e1e2e' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e1e2e' } }
+      }
+    }
+  });
+
+  // Preview table
+  const table = document.getElementById('dataPreview');
+  const previewData = data.slice(0, 10);
+  table.innerHTML = `
+    <thead><tr>${cols.map(c => `<th style="padding:8px 12px;text-align:left;color:#64748b;border-bottom:1px solid #1e1e2e;white-space:nowrap">${escapeHtml(c)}</th>`).join('')}</tr></thead>
+    <tbody>${previewData.map(row => `<tr>${cols.map(c => `<td style="padding:8px 12px;border-bottom:1px solid #1e1e2e;color:#94a3b8;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(row[c])}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
+
+function resetAnalyze() {
+  document.getElementById('dropZone').style.display = 'block';
+  document.getElementById('analyzeResults').style.display = 'none';
+  document.getElementById('analyzeAIResult').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  parsedData = [];
+}
+
+async function analyzeWithAI() {
+  if (!state.apiKey) { alert('Please set your API key in Settings first.'); navigate('settings'); return; }
+  const q = document.getElementById('analyzeQuestion').value.trim() || 'Provide a detailed statistical summary and key insights for this dataset.';
+  const btn = document.getElementById('analyzeSendBtn');
+  const resultEl = document.getElementById('analyzeAIResult');
+  btn.disabled = true;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.22-8.56"/></svg> Analyzing...`;
+  resultEl.style.display = 'none';
+
+  const cols = Object.keys(parsedData[0] || {});
+  const summary = cols.map(c => {
+    const vals = parsedData.map(r => r[c]);
+    const nums = vals.map(v => parseFloat(v)).filter(v => !isNaN(v));
+    if (nums.length) {
+      const avg = nums.reduce((a,b)=>a+b,0)/nums.length;
+      const min = Math.min(...nums), max = Math.max(...nums);
+      return `${c}: numeric, avg=${avg.toFixed(2)}, min=${min}, max=${max}, count=${nums.length}`;
+    }
+    return `${c}: text, unique values=${[...new Set(vals)].length}, total=${vals.length}`;
+  }).join('\n');
+
+  try {
+    const res = await fetch('https://router.bynara.id/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.apiKey}` },
+      body: JSON.stringify({
+        model: 'mistral-large',
+        messages: [
+          { role: 'system', content: 'You are a data analyst. Analyze the provided dataset summary and answer the user question clearly using markdown.' },
+          { role: 'user', content: `Dataset summary (${parsedData.length} rows):\n${summary}\n\nQuestion: ${q}` }
+        ]
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const reply = data.choices[0].message.content;
+    addTokens(data.usage?.total_tokens || 0);
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = safeMarkdown(reply);
+  } catch(e) {
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `<span style="color:#f87171">⚠️ Error: ${e.message}</span>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Analyze`;
+}
+
+// =================== REWARDS ===================
+const rewardsData = [
+  { title: 'Cashrewards', cat: 'cashback', url: 'https://www.cashrewards.com.au', desc: 'Australia\'s largest cashback rewards program with 1800+ stores.', color: '#f59e0b' },
+  { title: 'Shopback', cat: 'cashback', url: 'https://www.shopback.com', desc: 'Cashback platform across Southeast Asia with thousands of deals.', color: '#f59e0b' },
+  { title: 'Honey', cat: 'cashback', url: 'https://www.joinhoney.com', desc: 'Automatic coupon finder and cashback rewards by PayPal.', color: '#f59e0b' },
+  { title: 'Rakuten', cat: 'cashback', url: 'https://www.rakuten.com', desc: 'Earn cashback at thousands of popular online stores.', color: '#f59e0b' },
+  { title: 'Coinbase Earn', cat: 'crypto', url: 'https://coinbase.com/earn', desc: 'Earn free crypto by completing educational lessons.', color: '#8b5cf6' },
+  { title: 'Binance Launchpool', cat: 'crypto', url: 'https://launchpool.binance.com', desc: 'Stake BNB or BUSD to earn new token rewards.', color: '#8b5cf6' },
+  { title: 'Amazon Affiliate', cat: 'referral', url: 'https://affiliate-program.amazon.com', desc: 'Earn up to 10% commission on Amazon product referrals.', color: '#06b6d4' },
+  { title: 'Swagbucks', cat: 'surveys', url: 'https://www.swagbucks.com', desc: 'Earn SB points for surveys, videos, and online shopping.', color: '#34d399' },
+  { title: 'Survey Junkie', cat: 'surveys', url: 'https://www.surveyjunkie.com', desc: 'Get paid cash for completing consumer market research surveys.', color: '#34d399' },
+  { title: 'Ibotta', cat: 'shopping', url: 'https://home.ibotta.com', desc: 'Earn cash back on groceries and everyday purchases.', color: '#f59e0b' },
+  { title: 'Fetch Rewards', cat: 'shopping', url: 'https://fetchrewards.com', desc: 'Scan receipts to earn points redeemable for gift cards.', color: '#f59e0b' },
+  { title: 'Ahrefs', cat: 'tools', url: 'https://ahrefs.com', desc: 'SEO and marketing tool suite with backlink analysis.', color: '#94a3b8' },
+];
+const tips = [
+  '💡 Stack multiple cashback programs (credit card rewards + cashback site) for maximum returns.',
+  '🔁 Use referral links strategically — both parties earn when you refer active users.',
+  '📊 Track your rewards in a spreadsheet to identify which platforms give the best ROI.',
+  '⏰ Check seasonal promotions — most platforms triple rewards during holidays.',
+  '🛡️ Never share OTPs or passwords — legitimate reward programs never ask for them.',
+  '🔍 Compare before purchasing — cashback rates vary between platforms for the same store.',
+];
+
+function renderRewards() {
+  filterRewards();
+  document.getElementById('goldenTips').innerHTML = tips.map(t =>
+    `<li style="display:flex;gap:10px;font-size:0.85rem;color:#94a3b8;line-height:1.5">
+      <span style="color:#fbbf24;flex-shrink:0">→</span>${t}
+    </li>`).join('');
+}
+
+function filterRewards() {
+  const q = (document.getElementById('rewardsSearch')?.value || '').toLowerCase();
+  const cat = document.getElementById('rewardsCat')?.value || '';
+  const filtered = rewardsData.filter(r =>
+    (!q || r.title.toLowerCase().includes(q) || r.desc.toLowerCase().includes(q)) &&
+    (!cat || r.cat === cat)
+  );
+  const catColors = { cashback:'#f59e0b', crypto:'#8b5cf6', referral:'#06b6d4', surveys:'#34d399', shopping:'#f97316', tools:'#94a3b8' };
+  document.getElementById('rewardsGrid').innerHTML = filtered.length ? filtered.map(r => `
+    <div class="reward-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+        <h4 style="font-weight:600">${r.title}</h4>
+        <span class="tag" style="background:${catColors[r.cat]}1a;color:${catColors[r.cat]};border-color:${catColors[r.cat]}33;flex-shrink:0">${r.cat}</span>
+      </div>
+      <p style="color:#64748b;font-size:0.82rem;margin-bottom:12px;line-height:1.5">${r.desc}</p>
+      <a href="${r.url}" target="_blank" style="color:#8b5cf6;font-size:0.82rem;text-decoration:none;display:flex;align-items:center;gap:4px">
+        Visit Platform
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    </div>`) .join('') : `<div style="grid-column:1/-1;text-align:center;color:#4a5568;padding:40px">No results found.</div>`;
+}
+
+// =================== TASKS ===================
+function saveTasks() { localStorage.setItem('daily_tasks', JSON.stringify(state.tasks)); }
+
+function addTask() {
+  const title = document.getElementById('taskTitle').value.trim();
+  if (!title) return;
+  state.tasks.push({
+    id: Date.now(),
+    title,
+    priority: document.getElementById('taskPriority').value,
+    category: document.getElementById('taskCategory').value,
+    due: document.getElementById('taskDue').value,
+    done: false,
+    createdAt: new Date().toISOString()
+  });
+  document.getElementById('taskTitle').value = '';
+  document.getElementById('taskDue').value = '';
+  saveTasks();
+  renderTasks();
+}
+
+function toggleTask(id) {
+  const t = state.tasks.find(t => t.id === id);
+  if (t) { t.done = !t.done; saveTasks(); renderTasks(); }
+}
+
+function deleteTask(id) {
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  saveTasks();
+  renderTasks();
+}
+
+function clearCompletedTasks() {
+  state.tasks = state.tasks.filter(t => !t.done);
+  saveTasks();
+  renderTasks();
+}
+
+function renderTasks() {
+  const filterP = document.getElementById('filterPriority')?.value || '';
+  const filterC = document.getElementById('filterCategory')?.value || '';
+  const hideD = document.getElementById('hideCompleted')?.checked || false;
+  const today = new Date().toISOString().split('T')[0];
+
+  let filtered = state.tasks
+    .filter(t => (!filterP || t.priority === filterP) && (!filterC || t.category === filterC) && !(hideD && t.done))
+    .sort((a,b) => {
+      const prio = {high:0,medium:1,low:2};
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      return (prio[a.priority]||1) - (prio[b.priority]||1);
+    });
+
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t => t.done).length;
+  const pending = total - done;
+  const pct = total ? Math.round(done/total*100) : 0;
+
+  document.getElementById('totalTasksCount').textContent = total;
+  document.getElementById('doneTasksCount').textContent = done;
+  document.getElementById('pendingTasksCount').textContent = pending;
+  document.getElementById('tasksProgress').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${pct}% مكتمل`;
+
+  const badgeMap = { high: 'badge-high', medium: 'badge-medium', low: 'badge-low' };
+  const labelMap = { high: '🔴 عالية', medium: '🟡 متوسطة', low: '🟢 منخفضة' };
+  const list = document.getElementById('tasksList');
+
+  if (!filtered.length) {
+    list.innerHTML = `<div style="text-align:center;color:#4a5568;padding:48px;display:flex;flex-direction:column;align-items:center;gap:12px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2a2a3e" stroke-width="1.5" style="width:48px;height:48px"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <div>لا توجد مهام</div>
+      <div style="font-size:0.8rem">أضف مهمة جديدة باستخدام النموذج أعلاه</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => {
+    const isOverdue = t.due && !t.done && t.due < today;
+    return `<div class="task-item ${t.done ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})"
+          style="accent-color:#7c3aed;width:16px;height:16px;margin-top:2px;flex-shrink:0;cursor:pointer">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500;${t.done ? 'text-decoration:line-through;color:#4a5568' : ''}">${escapeHtml(t.title)}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <span class="badge ${badgeMap[t.priority]}">${labelMap[t.priority]}</span>
+            <span style="font-size:0.75rem;color:#4a5568;background:#1e1e2e;padding:2px 8px;border-radius:20px">${t.category}</span>
+            ${t.due ? `<span style="font-size:0.75rem;color:${isOverdue ? '#f87171' : '#64748b'};display:flex;align-items:center;gap:3px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              ${isOverdue ? '⚠️ ' : ''}${t.due}
+            </span>` : ''}
+          </div>
+        </div>
+        <button onclick="deleteTask(${t.id})" style="background:none;border:none;cursor:pointer;color:#4a5568;padding:2px;flex-shrink:0" title="حذف">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// =================== SETTINGS ===================
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  if (!val) { showApiStatus('Please enter a valid API key.', false); return; }
+  state.apiKey = val;
+  localStorage.setItem('nara_api_key', val);
+  showApiStatus('✅ API key saved successfully!', true);
+  updateBanner();
+}
+
+function clearApiKey() {
+  state.apiKey = '';
+  localStorage.removeItem('nara_api_key');
+  document.getElementById('apiKeyInput').value = '';
+  showApiStatus('API key cleared.', false);
+  updateBanner();
+}
+
+function showApiStatus(msg, ok) {
+  const el = document.getElementById('apiKeyStatus');
+  el.textContent = msg;
+  el.style.color = ok ? '#34d399' : '#f87171';
+  setTimeout(() => el.textContent = '', 3000);
+}
+
+function toggleApiKeyVisibility() {
+  const inp = document.getElementById('apiKeyInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function resetTokens() {
+  state.totalTokens = 0;
+  localStorage.setItem('total_tokens', '0');
+  updateTokenDisplay();
+}
+
+// spin animation for analyze button
+const style = document.createElement('style');
+style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(style);
+</script>
+</body>
+</html>
